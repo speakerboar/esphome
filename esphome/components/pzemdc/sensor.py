@@ -13,9 +13,6 @@ from esphome.const import (
     UNIT_VOLT,
     UNIT_AMPERE,
     UNIT_WATT,
-    CONF_ENERGY,
-    UNIT_ENERGY,
-    ICON_ENERGY
 )
 
 AUTO_LOAD = ["modbus"]
@@ -40,13 +37,10 @@ CONFIG_SCHEMA = (
                 state_class=STATE_CLASS_MEASUREMENT,
             ),
             cv.Optional(CONF_POWER): sensor.sensor_schema(
-                unit_of_measurement=UNIT_WATT_HOURS,
+                unit_of_measurement=UNIT_WATT,
                 accuracy_decimals=1,
                 device_class=DEVICE_CLASS_POWER,
                 state_class=STATE_CLASS_MEASUREMENT,
-                
-            cv.Optional(CONF_ENERGY): sensor.sensor_schema(
-                UNIT_ENERGY, ICON_ENERGY, 0),
             ),
         }
     )
@@ -68,13 +62,6 @@ async def to_code(config):
         conf = config[CONF_CURRENT]
         sens = await sensor.new_sensor(conf)
         cg.add(var.set_current_sensor(sens))
-        
-    if CONF_ENERGY in config:
-        conf = config[CONF_ENERGY]
-        sens = yield sensor.new_sensor(conf)
-        cg.add(var.set_energy_sensor(sens))
-        
-       
     if CONF_POWER in config:
         conf = config[CONF_POWER]
         sens = await sensor.new_sensor(conf)
