@@ -36,20 +36,14 @@ void PZEMDC::on_modbus_data(const std::vector<uint8_t> &data) {
 
   uint32_t raw_power = pzem_get_32bit(4);
   float power = raw_power / 10.0f;  // max 429496729.5 W
-  
-  float active_energy = static_cast<float>(pzem_get_32bit(10));
-  
-  
 
-  ESP_LOGD(TAG, "PZEM DC: V=%.1f V, I=%.3f A, E=%.1f Wh, P=%.1f W", voltage, current, active_energy, power);
+  ESP_LOGD(TAG, "PZEM DC: V=%.1f V, I=%.3f A, P=%.1f W", voltage, current, power);
   if (this->voltage_sensor_ != nullptr)
     this->voltage_sensor_->publish_state(voltage);
   if (this->current_sensor_ != nullptr)
     this->current_sensor_->publish_state(current);
   if (this->power_sensor_ != nullptr)
     this->power_sensor_->publish_state(power);
-  if (this->energy_sensor_ != nullptr)
-    this->energy_sensor_->publish_state(active_energy);
 }
 
 void PZEMDC::update() { this->send(PZEM_CMD_READ_IN_REGISTERS, 0, 8); }
@@ -58,9 +52,7 @@ void PZEMDC::dump_config() {
   ESP_LOGCONFIG(TAG, "  Address: 0x%02X", this->address_);
   LOG_SENSOR("", "Voltage", this->voltage_sensor_);
   LOG_SENSOR("", "Current", this->current_sensor_);
-  LOG_SENSOR("", "Energy", this->energy_sensor_);
   LOG_SENSOR("", "Power", this->power_sensor_);
-  
 }
 
 }  // namespace pzemdc
