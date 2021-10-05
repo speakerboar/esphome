@@ -1,33 +1,68 @@
-#pragma once
+import esphome.codegen as cg
+import esphome.config_validation as cv
+from esphome.components import sensor, modbus
+from esphome.const import (
+    CONF_CURRENT,
+    CONF_ID,
+    CONF_POWER,
+    CONF_VOLTAGE,
+    DEVICE_CLASS_CURRENT,
+    DEVICE_CLASS_POWER,
+    DEVICE_CLASS_VOLTAGE,
+    STATE_CLASS_MEASUREMENT,
+    UNIT_VOLT,
+    UNIT_AMPERE,
+    UNIT_WATT,
+)
 
-#include "esphome/core/component.h"
-#include "esphome/components/sensor/sensor.h"
-#include "esphome/components/modbus/modbus.h"
+AUTO_LOAD = ["modbus"]
 
-namespace esphome {
-namespace pzemdc {
+pzemdc_ns = cg.esphome_ns.namespace("pzemdc")
+PZEMDC = pzemdc_ns.class_("PZEMDC", cg.PollingComponent, modbus.ModbusDevice)
 
-class PZEMDC : public PollingComponent, public modbus::ModbusDevice {
- public:
-  void set_voltage_sensor(sensor::Sensor *voltage_sensor) { voltage_sensor_ = voltage_sensor; }
-  void set_current_sensor(sensor::Sensor *current_sensor) { current_sensor_ = current_sensor; }
-  void set_power_sensor(sensor::Sensor *power_sensor) { power_sensor_ = power_sensor; }
-  void set_frequency_sensor(sensor::Sensor *frequency_sensor) { frequency_sensor_ = frequency_sensor; }
-  void set_powerfactor_sensor(sensor::Sensor *powerfactor_sensor) { power_factor_sensor_ = powerfactor_sensor; }
+CONFIG_SCHEMA = (
+    cv.Schema(
+        {
+            cv.GenerateID(): cv.declare_id(PZEMDC),
+            cv.Optional(CONF_VOLTAGE): sensor.sensor_schema(
+                unit_of_measurement=UNIT_VOLT,
+                accuracy_decimals=1,
+                device_class=DEVICE_CLASS_VOLTAGE,
+                state_class=STATE_CLASS_MEASUREMENT,
+            ),
+            cv.Optional(CONF_CURRENT): sensor.sensor_schema(
+                unit_of_measurement=UNIT_AMPERE,
+                accuracy_decimals=3,
+                device_class=DEVICE_CLASS_CURRENT,
+                state_class=STATE_CLASS_MEASUREMENT,
+            ),
+            cv.Optional(CONF_POWER): sensor.sensor_schema(
+                unit_of_measurement=UNIT_WATT,
+                accuracy_decimals=1,
+                device_class=DEVICE_CLASS_POWER,
+                state_class=STATE_CLASS_MEASUREMENT,
+            ),
+        }
+    )
+    .extend(cv.polling_component_schema("60s"))
+    .extend(modbus.modbus_device_schema(0x01))
+)
 
-  void update() override;
 
-  void on_modbus_data(const std::vector<uint8_t> &data) override;
+async def to_code(config):
+    var = cg.new_Pvariable(config[CONF_ID])
+    await cg.register_component(var, config)
+    await modbus.register_modbus_device(var, config)
 
-  void dump_config() override;
-
- protected:
-  sensor::Sensor *voltage_sensor_;
-  sensor::Sensor *current_sensor_;
-  sensor::Sensor *power_sensor_;
-  sensor::Sensor *frequency_sensor_;
-  sensor::Sensor *power_factor_sensor_;
-};
-
-}  // namespace pzemdc
-}  // namespace esphome
+    if CONF_VOLTAGE in config:
+        conf = config[CONF_VOLTAGE]
+        sens = await sensor.new_sensor(conf)
+        cg.add(var.set_voltage_sensor(sens))
+    if CONF_CURRENT in config:
+        conf = config[CONF_CURRENT]
+        sens = await sensor.new_sensor(conf)
+        cg.add(var.set_current_sensor(sens))
+    if CONF_POWER in config:
+        conf = config[CONF_POWER]
+        sens = await sensor.new_sensor(conf)
+        cg.add(var.set_power_sensor(sens))
